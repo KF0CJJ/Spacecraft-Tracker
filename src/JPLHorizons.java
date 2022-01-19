@@ -123,7 +123,7 @@ public class JPLHorizons {
   	     ephString = ephString.substring(startOfEph+5, endOfEph);
 	     System.out.println(ephString);
 	     
-	     
+	     //test
 	     ephArr = ephString.split(",",0);
 	     for (String a : ephArr)
 	            System.out.println(a);
@@ -133,6 +133,7 @@ public class JPLHorizons {
 	     el = Double.parseDouble(ephArr[4]);
 	     dist = Double.parseDouble(ephArr[5]);
 	    
+	      
 	     
 	}
 

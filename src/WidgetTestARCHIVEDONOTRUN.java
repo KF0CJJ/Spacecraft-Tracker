@@ -470,6 +470,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	    		//keep updating data after an amount of time has passed until a difference S/C is selected
 	    		while(checkIndex == scBox.getSelectedIndex()) {
 	    			now1 = LocalDateTime.now(ZoneOffset.UTC);
+	    			
 	    			if(now1.isAfter(now2)) {
 	    				jpl.requestCurrentData(Double.parseDouble(latBox.getText()),Double.parseDouble(longBox.getText()),1.0,scBoxOptionItem);
 	    				distLabel.setText(jpl.getDist()+"");

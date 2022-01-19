@@ -28,6 +28,8 @@ public class AddSCDialog extends Dialog implements ActionListener{
 	 * @param parent
 	 * @param style
 	 */
+	
+	
 	public AddSCDialog(Shell parent, int style) {
 		super(parent, style);
 		setText("SWT Dialog");
