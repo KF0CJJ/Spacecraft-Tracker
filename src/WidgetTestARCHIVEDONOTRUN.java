@@ -15,10 +15,8 @@ import java.awt.GridLayout;
 import java.awt.Point;
 
 import javax.swing.*;
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
-import javax.swing.WindowConstants;
-
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.jfree.chart.*;
 import org.jfree.chart.axis.*;
@@ -40,7 +38,8 @@ import com.jgoodies.forms.layout.RowSpec;
 import com.jgoodies.forms.layout.FormSpecs;
 import java.awt.FlowLayout;
 import java.awt.Window.Type;
-import java.awt.Choice;
+import java.awt.*;
+import javax.swing.*;
 
 
 import org.jfree.chart.ChartPanel;
@@ -52,7 +51,9 @@ import org.jfree.chart.renderer.xy.*;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.AbstractXYDataset;
 import org.jfree.data.xy.*;
-
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 
 class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	private JComboBox scBox;
@@ -65,8 +66,17 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	private JPLHorizons jpl;
 	//Array of options for selectSCBox
 	private ArrayList<String> scBoxOptions;
+	private ArrayList<Double> freqList;
+	private ArrayList<String> scNickList;
 	
+	//data arrays
+	private ArrayList<String> timeList;
+	private ArrayList<Double> azList;
+	private ArrayList<Double> elList;
+	private ArrayList<Double> distList;
+	private ArrayList<Double> dopplerList;
 	
+	//swing stuff
 	private JTextField latBox;
 	private JTextField longBox;
 	private final Action action = new SwingAction();
@@ -81,6 +91,11 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	private String scBoxOptionItem;
 	private XYSeries series1;
 	private PolarPlot plot;
+	private JSpinner selectTimeSpinner;
+	private SpinnerListModel spinnerModel;
+	private JLabel dopplerLabel;
+	//some constants for calculations
+	private double speedOfLight;
 	
 	//public static void main(String[] args) {
 	//	WidgetTestARCHIVEDONOTRUN WidgetTest = new WidgetTestARCHIVEDONOTRUN();
@@ -88,6 +103,10 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	
 	public WidgetTestARCHIVEDONOTRUN() {
 		
+		//set constants
+		speedOfLight = 299792.458;
+		//init dopplerList
+		dopplerList = new ArrayList<Double>();
 		
 		getContentPane().setForeground(new Color(0, 255, 0));
 		getContentPane().setBackground(new Color(0, 0, 0));
@@ -242,7 +261,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		elLabelDescribe.setHorizontalAlignment(SwingConstants.CENTER);
 		elLabelDescribe.setForeground(textColor);
 		elLabelDescribe.setFont(new Font("Tahoma", Font.PLAIN, 20));
-		elLabelDescribe.setBackground(Color.BLACK);
+		elLabelDescribe.setBackground(bgColor);
 		elLabelDescribe.setBounds(10, 40, 136, 25);
 		panel.add(elLabelDescribe);
 		
@@ -250,7 +269,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		azLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		azLabel.setForeground(textColor);
 		azLabel.setFont(new Font("Tahoma", Font.PLAIN, 20));
-		azLabel.setBackground(Color.BLACK);
+		azLabel.setBackground(bgColor);
 		azLabel.setBounds(181, 11, 136, 25);
 		panel.add(azLabel);
 		
@@ -258,7 +277,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		azLabelDescribe.setHorizontalAlignment(SwingConstants.CENTER);
 		azLabelDescribe.setForeground(textColor);
 		azLabelDescribe.setFont(new Font("Tahoma", Font.PLAIN, 20));
-		azLabelDescribe.setBackground(Color.BLACK);
+		azLabelDescribe.setBackground(bgColor);
 		azLabelDescribe.setBounds(181, 40, 136, 25);
 		panel.add(azLabelDescribe);
 		
@@ -266,7 +285,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		distLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		distLabel.setForeground(textColor);
 		distLabel.setFont(new Font("Tahoma", Font.PLAIN, 20));
-		distLabel.setBackground(Color.BLACK);
+		distLabel.setBackground(bgColor);
 		distLabel.setBounds(10, 76, 136, 25);
 		panel.add(distLabel);
 		
@@ -274,33 +293,98 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		distLabelDescribe.setHorizontalAlignment(SwingConstants.CENTER);
 		distLabelDescribe.setForeground(textColor);
 		distLabelDescribe.setFont(new Font("Tahoma", Font.PLAIN, 20));
-		distLabelDescribe.setBackground(Color.BLACK);
+		distLabelDescribe.setBackground(bgColor);
 		distLabelDescribe.setBounds(10, 105, 136, 25);
 		panel.add(distLabelDescribe);
 		
-		JLabel dopplerLabel = new JLabel("0");
+		dopplerLabel = new JLabel("0");
 		dopplerLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		dopplerLabel.setForeground(new Color(96, 220, 0));
 		dopplerLabel.setFont(new Font("Tahoma", Font.PLAIN, 20));
-		dopplerLabel.setBackground(Color.BLACK);
+		dopplerLabel.setBackground(bgColor);
 		dopplerLabel.setBounds(181, 76, 136, 25);
 		panel.add(dopplerLabel);
 		
-		JLabel distLabelDescribe_1 = new JLabel("Distance");
-		distLabelDescribe_1.setHorizontalAlignment(SwingConstants.CENTER);
-		distLabelDescribe_1.setForeground(new Color(96, 220, 0));
-		distLabelDescribe_1.setFont(new Font("Tahoma", Font.PLAIN, 20));
-		distLabelDescribe_1.setBackground(Color.BLACK);
-		distLabelDescribe_1.setBounds(181, 105, 136, 25);
-		panel.add(distLabelDescribe_1);
+		JLabel dopplerLabelDescribe = new JLabel("Doppler Shift");
+		dopplerLabelDescribe.setHorizontalAlignment(SwingConstants.CENTER);
+		dopplerLabelDescribe.setForeground(new Color(96, 220, 0));
+		dopplerLabelDescribe.setFont(new Font("Tahoma", Font.PLAIN, 20));
+		dopplerLabelDescribe.setBackground(bgColor);
+		dopplerLabelDescribe.setBounds(181, 105, 136, 25);
+		panel.add(dopplerLabelDescribe);
+		
+		JLabel timeSpinnerLbl = new JLabel("Time");
+		timeSpinnerLbl.setHorizontalAlignment(SwingConstants.CENTER);
+		timeSpinnerLbl.setForeground(new Color(96, 220, 0));
+		timeSpinnerLbl.setFont(new Font("Tahoma", Font.PLAIN, 20));
+		timeSpinnerLbl.setBackground(bgColor);
+		timeSpinnerLbl.setBounds(10, 175, 136, 25);
+		panel.add(timeSpinnerLbl);
+		
+		//stuff for spinner that selects what time you want to view data for 
+		timeList = new ArrayList<String>();
+		timeList.add(" ");
+		spinnerModel =  new SpinnerListModel(timeList);
+		selectTimeSpinner = new JSpinner();
+		selectTimeSpinner.setModel(spinnerModel);
+		selectTimeSpinner.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		selectTimeSpinner.setToolTipText("Choose what time you want to know the values for, only works when you asked for a range of points");
+		selectTimeSpinner.setForeground(textColor);
+		selectTimeSpinner.setBackground(bgColor);
+		selectTimeSpinner.setBounds(10, 144, 147, 20);
+		panel.add(selectTimeSpinner);
+		//listener checking if selected index has changed
+		selectTimeSpinner.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				//check and see if first index is selected, if it is graph all points
+				if(getSelectedIndex(selectTimeSpinner,timeList)==0) {
+					//get size of lists before for loop, more efficent
+		    		int listSize = azList.size();
+		    		//clear graph
+		    		series1.clear();
+					// go through each index of data lists and add to polar graph
+					
+		    		series1.add(Double.NaN, Double.NaN);
+		    		
+		    		for(int i=0;i<listSize;i++) {
+		    			if(elList.get(i)>0) {
+		    				series1.add(azList.get(i).doubleValue(), elList.get(i).doubleValue());
+		    			}
+		    		}
+		    		series1.add(Double.NaN, Double.NaN);
+				}
+				//if 1st index isnt selected then only plot one point at chosen time
+				else {
+					//clear graph
+					series1.clear();
+					//add point of interest onto graph
+					series1.add(azList.get(getSelectedIndex(selectTimeSpinner,timeList)),elList.get(getSelectedIndex(selectTimeSpinner,timeList)));		
+					//set dopplerLabel
+					dopplerLabel.setText(String.valueOf(freqList.get(scBox.getSelectedIndex())+getDopplerShift(dopplerList.get(getSelectedIndex(selectTimeSpinner,timeList)),freqList.get(scBox.getSelectedIndex()))));
+					
+				}
+				//do this regardless of what index is chosen
+				//set azLabel
+				azLabel.setText(azList.get(getSelectedIndex(selectTimeSpinner,timeList)).toString());
+				//set elLabel
+				elLabel.setText(elList.get(getSelectedIndex(selectTimeSpinner,timeList)).toString());
+				//set distLabel
+				distLabel.setText(distList.get(getSelectedIndex(selectTimeSpinner,timeList)).toString());
+				
+				
+			}
+		});
 		
 		
+		//fill arraylists for dropdown box for selecting SC
 		scBoxOptions= new ArrayList<String>(Arrays.asList("","Create new S/C","LRO","301"));
-		
-		scBox = new JComboBox(scBoxOptions.toArray());
+		scNickList = new ArrayList<String>(Arrays.asList("","Create new S/C","LRO","Moon"));
+		freqList = new ArrayList<Double>(Arrays.asList(0.0,0.0, 2271.2,0.0 ));
+		scBox = new JComboBox(scNickList.toArray());
 		scBox.setToolTipText("Select a S/C to track");
 		scBox.setForeground(textColor);
-		scBox.setBackground(new Color(0, 0, 0));
+		scBox.setBackground(bgColor);
 		scBox.setOpaque(true);
 		scBox.setBounds(10, 78, 123, 25);
 		
@@ -371,44 +455,75 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		endTimeField.setBounds(181, 147, 136, 20);
 		scPanel.add(endTimeField);
 		
+		JSeparator separator = new JSeparator();
+		separator.setBounds(325, 0, 2, 437);
+		scPanel.add(separator);
+		separator.setOrientation(SwingConstants.VERTICAL);
+		separator.setBackground(Color.WHITE);
+		separator.setForeground(Color.WHITE);
+		
 		scBox.addItemListener(new ItemListener() {
             @SuppressWarnings("unchecked")
 			public void itemStateChanged(ItemEvent ie) {
-            	
             	if(ie.getStateChange() == ItemEvent.SELECTED) {
+            		
             		//do nothing if null is selected
             		if(scBox.getSelectedIndex()==0) {
-            			
+            			series1.clear();
+            			distLabel.setText("");
+            			azLabel.setText("");
+            			elLabel.setText("");
             		}
-            		//if create new S/C has been selected, make a new SC in the scBoxOptions array
-            		else if(scBox.getSelectedIndex()==1) {
-            			scBoxOptions.add(JOptionPane.showInputDialog(null, "Enter S/C name", ""));
-            			scBox.addItem(scBoxOptions.get(scBoxOptions.size()-1));
-            		}
-            		//if something other than create new S/C has been selected, request data from jpl horizons
             		else {
-            			//if none of the time fields are setup, then get current S/C data
-            			//check if time is not set, doing it outside of the if statement runs faster
-            			boolean checkTimeEmpty = ( (timeIntervalField.getText().equals("")|| timeIntervalField.getText().equals("0")) &&
+            			//make sure latbox and longbox are filed out
+            			if(latBox.getText().equals("")||longBox.getText().equals("")) {
+            				JOptionPane.showMessageDialog(null, "Make sure latitute and longitude are filled out correctly!", "Lat Long Config Error", JOptionPane.ERROR_MESSAGE);
+                			scBox.setSelectedIndex(0);
+                			
+                			
+            			}
+            			//if create new S/C has been selected, make a new SC in the scBoxOptions array
+            			else if(scBox.getSelectedIndex()==1) {
+
+            				JTextField idField = new JTextField();
+            				JTextField nickField = new JTextField();
+            				JTextField freqField = new JTextField();
+            				Object[] options = {"Enter SC ID",idField,
+            						"Enter Nickname",nickField,
+            						"Enter frequency"};
+            				
+            				freqList.add(Double.parseDouble(JOptionPane.showInputDialog(null, options,"Enter SC data",JOptionPane.CANCEL_OPTION)));
+            				scBoxOptions.add(idField.getText());
+            				scNickList.add(nickField.getText());
+            				
+            				scBox.addItem(scNickList.get(scNickList.size()-1));
+            			}
+            			//if something other than create new S/C has been selected, request data from jpl horizons
+            			else {
+            				//if none of the time fields are setup, then get current S/C data
+            				//check if time is not set, doing it outside of the if statement runs faster
+            				boolean checkTimeEmpty = ( (timeIntervalField.getText().equals("")|| timeIntervalField.getText().equals("0")) &&
             					endTimeField.getText().equals("")&& 
             					startTimeField.getText().equals("") && 
             					timeComboBox.getSelectedIndex()==0);
-            			//check if time is set correctly, doing it outside of the if statement runs faster
-            			boolean checkTimeCorrect  = ( (!timeIntervalField.getText().equals("")|| !timeIntervalField.getText().equals("0")) &&
+            				//check if time is set correctly, doing it outside of the if statement runs faster
+            				boolean checkTimeCorrect  = ( (!timeIntervalField.getText().equals("")|| !timeIntervalField.getText().equals("0")) &&
             					!endTimeField.getText().equals("")&& 
             					!startTimeField.getText().equals("") && 
             					timeComboBox.getSelectedIndex()!=0);
-            			if(checkTimeEmpty) {
-            				doRequestCurrentData();
-            			}
-            			//if all the time fields are set correctly, then get range of data from jpl horizons
-            			else if(checkTimeCorrect) {
-            				doRequestTimeRangeData(timeIntervalField.getText()+" "+timeIntervals[timeComboBox.getSelectedIndex()]);
+            				if(checkTimeEmpty) {
+            					doRequestCurrentData();
+            				}
+            				//if all the time fields are set correctly, then get range of data from jpl horizons
+            				else if(checkTimeCorrect) {
+            					doRequestTimeRangeData(timeIntervalField.getText()+" "+timeIntervals[timeComboBox.getSelectedIndex()]);
             				
-            			}
-            			//if some of time fields are set up but not all give user a warning
-            			else {
-            				JOptionPane.showMessageDialog(null, "Make sure all time inputs are empty or are fully filled out!", "Time Configuration error", JOptionPane.ERROR_MESSAGE);
+            				}
+            				//if some of time fields are set up but not all give user a warning
+            				else {
+            					JOptionPane.showMessageDialog(null, "Make sure all time inputs are empty or are fully filled out!", "Time Configuration error", JOptionPane.ERROR_MESSAGE);
+            					scBox.setSelectedIndex(0);
+            				}
             			}
             		}
             	}
@@ -476,6 +591,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	    				distLabel.setText(jpl.getDist()+"");
 	    				azLabel.setText(jpl.getAz()+"");
 	    				elLabel.setText(jpl.getEl()+"");
+	    				dopplerLabel.setText(String.valueOf(freqList.get(checkIndex)+getDopplerShift(jpl.getDelta(),freqList.get(checkIndex))));
 	    				//update graph
 	    				series1.clear();
 	    				
@@ -497,40 +613,54 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		 };
 		sw1.execute(); 
 	}
-	private ArrayList<Double> azList;
-	private ArrayList<Double> elList;
-	private ArrayList<Double> distList;
+	
 	//swing worker for requesting range of data
 	public  void doRequestTimeRangeData(String step) {
 		SwingWorker sw1 = new SwingWorker() {
 	    @Override
 	    protected Void doInBackground() {
-	
+	    	
 	    	try {
+	    		//get selected SC
 	    		scBoxOptionItem = (String) scBoxOptions.toArray()[scBox.getSelectedIndex()];
+	    		//request data from jpl horizons
 	    		jpl.requestTimeRangeData(Double.parseDouble(latBox.getText()),Double.parseDouble(longBox.getText()),1.0,scBoxOptionItem,startTimeField.getText(),endTimeField.getText(),step);
-	    		distLabel.setText(jpl.getDist()+"");
-	    		azLabel.setText(jpl.getAz()+"");
-	    		elLabel.setText(jpl.getEl()+"");
-	    		//update graph
-	    		series1.clear();
+	    		
 	    		
 	    		//get arraylists from jpl
 	    		azList = jpl.getAzArrList();
 	    		elList = jpl.getElArrList();
 	    		distList = jpl.getDistArrList();
+	    		timeList = jpl.getTimeArrList();
+	    		dopplerList = jpl.getDeltaArrList();
+	    		//add buffer in data, so all points can be displayed at once
+	    		azList.add(0,0.0);
+	    		elList.add(0,0.0);
+	    		distList.add(0,0.0);
+	    		timeList.add(0,"");
+	    		dopplerList.add(0,0.0);
+	    		
+	    		
+	    		spinnerModel.setList(timeList);
+	    		
 	    		//get size of lists before for loop, more efficent
 	    		int listSize = azList.size();
+	    		//clear graph
+	    		series1.clear();
 	    		// go through each index of data lists and add to polar graph
-	    		series1.add(0, Double.NaN);
+	    		series1.add(Double.NaN, Double.NaN);
+	    		
 	    		for(int i=0;i<listSize;i++) {
 	    			if(elList.get(i)>0) {
 	    				series1.add(azList.get(i).doubleValue(), elList.get(i).doubleValue());
 	    			}
 	    		}
-	    		series1.add(0, Double.NaN);
+	    		series1.add(Double.NaN, Double.NaN);
 	    		
-	    		
+	    		//set dopplerList to doppler shifts
+	    		for(int i=1;i<listSize;i++) {
+	    			dopplerList.set(i,freqList.get(scBox.getSelectedIndex())+getDopplerShift(freqList.get(scBox.getSelectedIndex()),dopplerList.get(i)));
+	    		}
 	    		return null;
 			
 	    		} catch (Exception e) {
@@ -542,6 +672,20 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	    	}
 		 };
 		sw1.execute(); 
+	}
+	//function to get index of a spinner
+	public int getSelectedIndex(JSpinner spinner, ArrayList<?> values) {
+	    int index=0;
+	    for(Object o :values) {
+	        if(o.equals(spinner.getValue()))
+	            return index;
+	        index++;
+	    }
+	    return -1;
+	}
+	//doppler shift calculations
+	public double getDopplerShift(double freq,double deldot) {
+		return (deldot/speedOfLight)*freq;
 	}
 }
 	

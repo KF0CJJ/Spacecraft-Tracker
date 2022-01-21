@@ -11,6 +11,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Scanner;
+
+import javax.swing.JOptionPane;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -48,10 +51,13 @@ public class JPLHorizons {
 	private String ephString;
 	private String[] ephArr;
 	private int ephArrSize;
+	private double delta;
 	//data arrays
 	private ArrayList<Double> azArrList;
 	private ArrayList<Double> elArrList;
 	private ArrayList<Double> distArrList;
+	private ArrayList<String> timeArrList;
+	private ArrayList<Double> deltaArrList;
 	//private double[] azArr;
 	//private double[] elArr;
 	//private double[] distArr;
@@ -85,7 +91,7 @@ public class JPLHorizons {
 		url = "https://ssd.jpl.nasa.gov/api/horizons.api?";
 		url+="format=text";
 		url+="&COMMAND=\'"+SC+"\'";
-		url+="&CENTER=\'coord\'&ANG_FORMAT=\'DEG\'&TIME_DIGITS=\'SECONDS\'&RANGE_UNITS=\'AU\'&OBJ_DATA=\'NO\'&VEC_LABELS=\'NO\'&CSV_FORMAT='YES'";
+		url+="&CENTER=\'coord\'&ANG_FORMAT=\'DEG\'&TIME_DIGITS=\'SECONDS\'&RANGE_UNITS=\'KM\'&OBJ_DATA=\'NO\'&VEC_LABELS=\'NO\'&CSV_FORMAT='YES'";
 		url+="&QUANTITIES='4,20'";
 		url+="&SITE_COORD=\'"+coord+"\'";
 		url+="&START_TIME=\'"+now.format(dtf)+"\'";
@@ -132,7 +138,7 @@ public class JPLHorizons {
 	     az = Double.parseDouble(ephArr[3]);
 	     el = Double.parseDouble(ephArr[4]);
 	     dist = Double.parseDouble(ephArr[5]);
-	    
+	     delta = Double.parseDouble(ephArr[6]);
 	      
 	     
 	}
@@ -148,6 +154,9 @@ public class JPLHorizons {
 	public double getDist() {
 		return dist;
 	}
+	public double getDelta() {
+		return delta;
+	}
 	//request a range of data
 	public void requestTimeRangeData(double lat, double lon, double freq, String SC,String startTime,String endTime,String step) throws Exception{
 		this.lat = lat;
@@ -161,7 +170,7 @@ public class JPLHorizons {
 		url = "https://ssd.jpl.nasa.gov/api/horizons.api?";
 		url+="format=text";
 		url+="&COMMAND=\'"+SC+"\'";
-		url+="&CENTER=\'coord\'&ANG_FORMAT=\'DEG\'&TIME_DIGITS=\'SECONDS\'&RANGE_UNITS=\'AU\'&OBJ_DATA=\'NO\'&VEC_LABELS=\'NO\'&CSV_FORMAT='YES'";
+		url+="&CENTER=\'coord\'&ANG_FORMAT=\'DEG\'&TIME_DIGITS=\'SECONDS\'&RANGE_UNITS=\'KM\'&OBJ_DATA=\'NO\'&VEC_LABELS=\'NO\'&CSV_FORMAT='YES'";
 		url+="&QUANTITIES='4,20'";
 		url+="&SITE_COORD=\'"+coord+"\'";
 		//add start end and time step in url request
@@ -194,7 +203,9 @@ public class JPLHorizons {
 	     // look for $$SOE, take everything in string until $$EOE
 	     startOfEph = ephString.indexOf("$$SOE");
 	     endOfEph = ephString.indexOf("$$EOE");
-	     
+	     if(startOfEph==-1 || endOfEph==-1) {
+	    	 JOptionPane.showMessageDialog(null, response.toString(), "JPL error", JOptionPane.ERROR_MESSAGE);
+	     }
 	     System.out.println("$$SOE at: "+startOfEph+"\n$$EOE at: "+endOfEph);
   	     ephString = ephString.substring(startOfEph+5, endOfEph);
 	     System.out.println(ephString);
@@ -207,7 +218,12 @@ public class JPLHorizons {
 	     azArrList=  new ArrayList<Double>();
 	     elArrList= new ArrayList<Double>();
 	     distArrList = new ArrayList<Double>();
+	     deltaArrList = new ArrayList<Double>();
+	     timeArrList = new ArrayList<String>();
 	     for(int i=0;i<ephArrSize;i++) {
+	    	 if(i%7==0) {
+	    		 timeArrList.add(ephArr[i]);
+	    	 }
 	    	 if(i%7==3) {
 	    		 azArrList.add(Double.parseDouble(ephArr[i]));
 	    	 }
@@ -215,7 +231,10 @@ public class JPLHorizons {
 	    		 elArrList.add(Double.parseDouble(ephArr[i]));
 	    	 }
 	    	 else if(i%7==5) {
-	    		 distArrList.add(Double.parseDouble(ephArr[i]));
+	    		 distArrList.add(Double.parseDouble(ephArr[i])/**149597870.7*/);
+	    	 }
+	    	 else if(i%7==6) {
+	    		 deltaArrList.add(Double.parseDouble(ephArr[i]));
 	    	 }
 	     }
 	     System.out.println(azArrList);
@@ -231,6 +250,12 @@ public class JPLHorizons {
 	}
 	public ArrayList<Double> getDistArrList() {
 	 	return distArrList;
+	}
+	public ArrayList<String> getTimeArrList(){
+		return timeArrList;
+	}
+	public ArrayList<Double> getDeltaArrList(){
+		return deltaArrList;
 	}
 	     
 	
