@@ -20,7 +20,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-
+//
 public class JPLHorizons {
 	private double lat;
 	private double lon;
@@ -42,7 +42,7 @@ public class JPLHorizons {
 	private String inputLine;
 	private JSONObject myResponse;
 	//http vars
-	private String url;
+	//private String url;
 	private URL obj;
 	private  HttpURLConnection jpl;
 	//get data out of response vars
@@ -58,9 +58,11 @@ public class JPLHorizons {
 	private ArrayList<Double> distArrList;
 	private ArrayList<String> timeArrList;
 	private ArrayList<Double> deltaArrList;
+	private StringBuilder url;
 	//private double[] azArr;
 	//private double[] elArr;
 	//private double[] distArr;
+	private int responseCode;
 	
 	public JPLHorizons() throws Exception{
 		
@@ -69,12 +71,12 @@ public class JPLHorizons {
 		dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 		cal = Calendar.getInstance();
 		//other vars
-		
+		url = new StringBuilder("https://ssd.jpl.nasa.gov/api/horizons.api?");
 		
 		
 		
 	}
-	
+	//TODO if response code != 200 say that website down or equivilent for response code and dont just say that internet not work
 	public void requestCurrentData(double lat, double lon, double freq, String SC) throws Exception{
 		this.lat = lat;
 		this.lon = lon;
@@ -88,24 +90,25 @@ public class JPLHorizons {
 		formattedNow = now.format(dtf);
 		
 		//set connection params
-		url = "https://ssd.jpl.nasa.gov/api/horizons.api?";
-		url+="format=text";
-		url+="&COMMAND=\'"+SC+"\'";
-		url+="&CENTER=\'coord\'&ANG_FORMAT=\'DEG\'&TIME_DIGITS=\'SECONDS\'&RANGE_UNITS=\'KM\'&OBJ_DATA=\'NO\'&VEC_LABELS=\'NO\'&CSV_FORMAT='YES'";
-		url+="&QUANTITIES='4,20'";
-		url+="&SITE_COORD=\'"+coord+"\'";
-		url+="&START_TIME=\'"+now.format(dtf)+"\'";
-		url+="&STOP_TIME=\'"+now.plusMinutes(1).format(dtf)+"\'";
-		url+="&STEP_SIZE=\'1 min\'";
+		url.delete(0,url.length());
+		url.append("https://ssd.jpl.nasa.gov/api/horizons.api?");
+		url.append("format=text");
+		url.append("&COMMAND=\'"+SC+"\'");
+		url.append("&CENTER=\'coord\'&ANG_FORMAT=\'DEG\'&TIME_DIGITS=\'SECONDS\'&RANGE_UNITS=\'KM\'&OBJ_DATA=\'NO\'&VEC_LABELS=\'NO\'&CSV_FORMAT='YES'");
+		url.append("&QUANTITIES='4,20'");
+		url.append("&SITE_COORD=\'"+coord+"\'");
+		url.append("&START_TIME=\'"+now.format(dtf)+"\'");
+		url.append("&STOP_TIME=\'"+now.plusMinutes(1).format(dtf)+"\'");
+		url.append("&STEP_SIZE=\'1 min\'");
 		
-		obj = new URL(url);
+		obj = new URL(url.toString());
 		
 		//request data from jpl horizons
 		
 		jpl=(HttpURLConnection)obj.openConnection();
 		jpl.setRequestMethod("GET");
 		jpl.setRequestProperty("User-Agent", "Mozilla/5.0");
-		int responseCode = jpl.getResponseCode();
+		responseCode = jpl.getResponseCode();
 		System.out.println("Response Code : " + responseCode);
 		response = new StringBuffer();
 		inputStream = new InputStreamReader(jpl.getInputStream());
@@ -158,6 +161,7 @@ public class JPLHorizons {
 		return delta;
 	}
 	//request a range of data
+	//TODO add storgage of spacecraft 
 	public void requestTimeRangeData(double lat, double lon, double freq, String SC,String startTime,String endTime,String step) throws Exception{
 		this.lat = lat;
 		this.lon = lon;
@@ -167,25 +171,27 @@ public class JPLHorizons {
 		coord = Double.toString(lon) + "," + Double.toString(lat) +",0";
 
 		//set connection params
-		url = "https://ssd.jpl.nasa.gov/api/horizons.api?";
-		url+="format=text";
-		url+="&COMMAND=\'"+SC+"\'";
-		url+="&CENTER=\'coord\'&ANG_FORMAT=\'DEG\'&TIME_DIGITS=\'SECONDS\'&RANGE_UNITS=\'KM\'&OBJ_DATA=\'NO\'&VEC_LABELS=\'NO\'&CSV_FORMAT='YES'";
-		url+="&QUANTITIES='4,20'";
-		url+="&SITE_COORD=\'"+coord+"\'";
+		//use a string buffer instead of concatenate onto string because its more efficient
+		url.delete(0,url.length());
+		url.append("https://ssd.jpl.nasa.gov/api/horizons.api?");
+		url.append("format=text");
+		url.append("&COMMAND=\'"+SC+"\'");
+		url.append("&CENTER=\'coord\'&ANG_FORMAT=\'DEG\'&TIME_DIGITS=\'SECONDS\'&RANGE_UNITS=\'KM\'&OBJ_DATA=\'NO\'&VEC_LABELS=\'NO\'&CSV_FORMAT='YES'");
+		url.append("&QUANTITIES='4,20'");
+		url.append("&SITE_COORD=\'"+coord+"\'");
 		//add start end and time step in url request
-		url+="&START_TIME=\'"+startTime+"\'";
-		url+="&STOP_TIME=\'"+endTime+"\'";
-		url+="&STEP_SIZE=\'"+step+"\'";
+		url.append("&START_TIME=\'"+startTime+"\'");
+		url.append("&STOP_TIME=\'"+endTime+"\'");
+		url.append("&STEP_SIZE=\'"+step+"\'");
 		
-		obj = new URL(url);
+		obj = new URL(url.toString());
 		
 		//request data from jpl horizons
 		//TODO clear arrays after running
 		jpl=(HttpURLConnection)obj.openConnection();
 		jpl.setRequestMethod("GET");
 		jpl.setRequestProperty("User-Agent", "Mozilla/5.0");
-		int responseCode = jpl.getResponseCode();
+		responseCode = jpl.getResponseCode();
 		System.out.println("Response Code : " + responseCode);
 		response = new StringBuffer();
 		inputStream = new InputStreamReader(jpl.getInputStream());
@@ -257,7 +263,9 @@ public class JPLHorizons {
 	public ArrayList<Double> getDeltaArrList(){
 		return deltaArrList;
 	}
-	     
+	public int getResponseCode() {
+		return responseCode;
+	}
 	
 	
 	

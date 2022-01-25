@@ -360,10 +360,10 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 					series1.clear();
 					//add point of interest onto graph
 					series1.add(azList.get(getSelectedIndex(selectTimeSpinner,timeList)),elList.get(getSelectedIndex(selectTimeSpinner,timeList)));		
-					//set dopplerLabel
-					dopplerLabel.setText(String.valueOf(freqList.get(scBox.getSelectedIndex())+getDopplerShift(dopplerList.get(getSelectedIndex(selectTimeSpinner,timeList)),freqList.get(scBox.getSelectedIndex()))));
-					
+										
 				}
+				//TODO clear all the arrays 
+				
 				//do this regardless of what index is chosen
 				//set azLabel
 				azLabel.setText(azList.get(getSelectedIndex(selectTimeSpinner,timeList)).toString());
@@ -371,6 +371,8 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 				elLabel.setText(elList.get(getSelectedIndex(selectTimeSpinner,timeList)).toString());
 				//set distLabel
 				distLabel.setText(distList.get(getSelectedIndex(selectTimeSpinner,timeList)).toString());
+				//set dopplerLabel
+				dopplerLabel.setText(String.valueOf(dopplerList.get(getSelectedIndex(selectTimeSpinner,timeList))));
 				
 				
 			}
@@ -462,6 +464,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		separator.setBackground(Color.WHITE);
 		separator.setForeground(Color.WHITE);
 		
+		//TODO make it so spacecraft can be deleted, maybe make a new spacecraft class? Make it so spacecraft are stored, maybe in a .JSON file
 		scBox.addItemListener(new ItemListener() {
             @SuppressWarnings("unchecked")
 			public void itemStateChanged(ItemEvent ie) {
@@ -565,7 +568,6 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
 		
 	}
 	//TODO make the lat long freq and S/C be input when calling function, should be faster than getting those values every single time the position updates
@@ -604,7 +606,10 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	    		return null;
 			
 	    	} catch (Exception e) {
-		
+	    		int responseCode = jpl.getResponseCode();
+	    		if(responseCode != 200) {
+	    			
+	    		}
 	    		e.printStackTrace();
 	    		System.out.println("Could not connect to JPL horizons");
 	    		return null;
@@ -664,7 +669,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	    		return null;
 			
 	    		} catch (Exception e) {
-		
+	    		int responseCode = jpl.getResponseCode();
 	    		e.printStackTrace();
 	    		System.out.println("Could not connect to JPL horizons");
 	    		return null;
