@@ -5,6 +5,11 @@ import java.awt.Component;
 import java.awt.Font;
 import java.awt.event.*;
 import java.awt.geom.Ellipse2D;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -54,7 +59,11 @@ import org.jfree.data.xy.*;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
-
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+//TODO make an EME mode for moon?
 class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	private JComboBox scBox;
 	private Color bgColor;
@@ -96,13 +105,75 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	private JLabel dopplerLabel;
 	//some constants for calculations
 	private double speedOfLight;
-	
-	//public static void main(String[] args) {
-	//	WidgetTestARCHIVEDONOTRUN WidgetTest = new WidgetTestARCHIVEDONOTRUN();
-	//}
-	
-	public WidgetTestARCHIVEDONOTRUN() {
+	//JSON stuff
+	private JSONArray scArr;
+	private JSONObject tempJson;
+	private JSONObject spaceCraftJson;
+	private JSONTokener jsonTokener;
+	private File scJsonFile;
+	private FileWriter fileWriter;
+	private FileReader fileReader;
+	public WidgetTestARCHIVEDONOTRUN(){
+		//initalize json stuff
+		spaceCraftJson = new JSONObject();
+		tempJson = new JSONObject();
+		scArr = new JSONArray();
 		
+		/*  if there is no sc.JSON file, fill out scArr with the moon and LRO
+		 * if there is an sc.json file, load everything in it into scArr
+		 * then parse scArr into the 3 arraylists*/
+		try {
+			//make the sc.json file path, will be in same directory as this file is, or the .exe or .jar file, depends on OS
+			scJsonFile = new File(System.getProperty("user.dir")+"\\sc.json");
+			
+			
+			//if sc.json doesnt exist or is empty, make it
+			if(scJsonFile.length()==0) {
+				fileWriter = new FileWriter(scJsonFile);
+				//create empty sc.json file
+				scJsonFile.createNewFile();
+				//make spaceCraftJson with moon and lro
+				spaceCraftJson.put("spaceCraft",scArr);
+				tempJson.put("scId","301");
+				tempJson.put("scNick","Moon");
+				tempJson.put("freq",0.0);
+				scArr.put(tempJson); 
+				tempJson = new JSONObject();
+			    tempJson.put("scId","LRO");
+			    tempJson.put("scNick","LRO");
+			    tempJson.put("freq",2270.5);
+			    scArr.put(tempJson); 
+			    fileWriter.write(spaceCraftJson.toString());
+			    fileWriter.close();
+			}else {
+				//if the file does exist, read it
+				fileReader = new FileReader(scJsonFile);
+				jsonTokener = new JSONTokener(fileReader);
+				spaceCraftJson = new JSONObject(jsonTokener);
+			}
+			//put stuff from spaceCraftJson into the 3 array lists for id nickname and freq
+			//initalize array lists with null and Create new S/C options
+			scBoxOptions= new ArrayList<String>(Arrays.asList("","Create new S/C"));
+			scNickList = new ArrayList<String>(Arrays.asList("","Create new S/C"));
+			freqList = new ArrayList<Double>(Arrays.asList(0.0,0.0));
+			//go through spaceCraftJson in a loop and fill out each arraylist
+			scArr = spaceCraftJson.getJSONArray("spaceCraft");
+			System.out.println(scArr);
+			for(int i=0;i<scArr.length();i++) {
+				tempJson = scArr.getJSONObject(i);
+				scBoxOptions.add((String) tempJson.opt("scId"));
+				scNickList.add((String) tempJson.opt("scNick"));
+				freqList.add(Double.parseDouble(tempJson.opt("freq").toString()));
+			}
+		
+		} catch (JSONException | IOException e1) {
+			e1.printStackTrace();
+			//if the previous code somehow doesnt work, must mean something is wrong with java
+			//TODO make error dialog show up when this happens
+			System.out.println("code broke during json initialization, no real way for user to break this part so let the dev know");
+			System.exit(1);
+		}
+		System.out.println(spaceCraftJson.toString());
 		//set constants
 		speedOfLight = 299792.458;
 		//init dopplerList
@@ -114,14 +185,27 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		setBackground(new Color(0, 0, 0));
 		
 		
-		//data stuff
+		//make new JPLHorizons, if that doesnt work for whatever reason send stuff to cmd line
 		try {
 			jpl = new JPLHorizons();
 		}
 		catch(Exception e){
 			System.out.println("No internet");
 		}
-		//gui stuff
+		
+		this.addWindowListener(new java.awt.event.WindowAdapter() {
+		    @Override
+		    public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+		    		try {
+		    			spaceCraftJson.put("spaceCraft",scArr);
+						fileWriter = new FileWriter(scJsonFile);
+						fileWriter.write(spaceCraftJson.toString());
+					    fileWriter.close();
+					} catch (IOException | JSONException e) {
+						e.printStackTrace();
+					}
+		        }
+		});
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		//menu bar setup
@@ -129,6 +213,9 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		menu = new JMenu();
 		this.setJMenuBar(menuBar);
 		
+		//TODO add a clock on the menu bar
+		
+		//gui stuff
 		JButton settingsButton = new JButton("Settings");
 		settingsButton.setToolTipText("Go to the settings menu");
 		menuBar.add(settingsButton);
@@ -147,7 +234,6 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		scPanel.setBackground(bgColor);
 		
 		XYDataset dataset = getXYDataset();
-		 // Create chart
 		
 		westPanel.add(scPanel);
 		scPanel.setLayout(null);
@@ -217,8 +303,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	            true,
 	            false
 	            );
-		
-		//set renderer so only points are plotted with no lines connecting them
+		//TODO make graph only plot points, or find a way to get rid of connecting line
 		
 		
 		plot = (PolarPlot) chart.getPlot();
@@ -228,15 +313,10 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		axis.setInverted(true);
 		axis.setTickLabelsVisible(true);
 
-	    
-	    //setContentPane(panel);
-	    
 		ChartPanel polarGraphPanel = new ChartPanel(chart);
 		polarGraphPanel.setBackground(bgColor);
 		westPanel.add(polarGraphPanel);
-		
 		polarGraphPanel.setMouseZoomable(false);
-		
 		
 		JPanel dataPanel = new JPanel();
 		dataPanel.setBackground(bgColor);
@@ -334,6 +414,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		selectTimeSpinner.setBounds(10, 144, 147, 20);
 		panel.add(selectTimeSpinner);
 		//listener checking if selected index has changed
+		//TODO make time interval become the update rate, and if its null then default to 1 min. also make display update smoothly, make it track in betwen updates for motors
 		selectTimeSpinner.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent e) {
@@ -377,12 +458,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 				
 			}
 		});
-		
-		
-		//fill arraylists for dropdown box for selecting SC
-		scBoxOptions= new ArrayList<String>(Arrays.asList("","Create new S/C","LRO","301"));
-		scNickList = new ArrayList<String>(Arrays.asList("","Create new S/C","LRO","Moon"));
-		freqList = new ArrayList<Double>(Arrays.asList(0.0,0.0, 2271.2,0.0 ));
+		//set up dropdown box for selecting SC
 		scBox = new JComboBox(scNickList.toArray());
 		scBox.setToolTipText("Select a S/C to track");
 		scBox.setForeground(textColor);
@@ -464,7 +540,11 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		separator.setBackground(Color.WHITE);
 		separator.setForeground(Color.WHITE);
 		
-		//TODO make it so spacecraft can be deleted, maybe make a new spacecraft class? Make it so spacecraft are stored, maybe in a .JSON file
+		/*TODO make it so spacecraft can be deleted from the comboBox. Make it so spacecraft are stored in a .JSON file
+		 make it that the json file is checked when the program is opened, and saved to an array. When program is closed save everything to .JSON file
+		 if an SC is deleted update the JSON file. or not
+		 */
+		
 		scBox.addItemListener(new ItemListener() {
             @SuppressWarnings("unchecked")
 			public void itemStateChanged(ItemEvent ie) {
@@ -487,7 +567,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
             			}
             			//if create new S/C has been selected, make a new SC in the scBoxOptions array
             			else if(scBox.getSelectedIndex()==1) {
-
+            				//TODO make seleceted index 0 
             				JTextField idField = new JTextField();
             				JTextField nickField = new JTextField();
             				JTextField freqField = new JTextField();
@@ -498,6 +578,17 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
             				freqList.add(Double.parseDouble(JOptionPane.showInputDialog(null, options,"Enter SC data",JOptionPane.CANCEL_OPTION)));
             				scBoxOptions.add(idField.getText());
             				scNickList.add(nickField.getText());
+            				//add data to scArr
+            				try {
+            					tempJson = new JSONObject();
+								tempJson.put("scId",scBoxOptions.get(scBoxOptions.size()-1));
+								tempJson.put("scNick",scNickList.get(scNickList.size()-1));
+	            				tempJson.put("freq",freqList.get(freqList.size()-1));
+	            				scArr.put(tempJson); 
+							} catch (JSONException e) {
+								e.printStackTrace();
+							}
+            				
             				
             				scBox.addItem(scNickList.get(scNickList.size()-1));
             			}
@@ -693,7 +784,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		return (deldot/speedOfLight)*freq;
 	}
 }
-	
+//go through an array of SC objects and find where a certain SC is
 
 
 
