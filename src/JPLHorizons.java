@@ -131,7 +131,10 @@ public class JPLHorizons {
 	     System.out.println("$$SOE at: "+startOfEph+"\n$$EOE at: "+endOfEph);
   	     ephString = ephString.substring(startOfEph+5, endOfEph);
 	     System.out.println(ephString);
-	     
+	     //if JPL gives an error, show user the error
+	     if(startOfEph==-1 || endOfEph==-1) {
+	    	 JOptionPane.showMessageDialog(null, response.toString(), "JPL error", JOptionPane.ERROR_MESSAGE);
+	     }
 	     //test
 	     ephArr = ephString.split(",",0);
 	     for (String a : ephArr)
@@ -161,7 +164,6 @@ public class JPLHorizons {
 		return delta;
 	}
 	//request a range of data
-	//TODO add storgage of spacecraft 
 	public void requestTimeRangeData(double lat, double lon, double freq, String SC,String startTime,String endTime,String step) throws Exception{
 		this.lat = lat;
 		this.lon = lon;

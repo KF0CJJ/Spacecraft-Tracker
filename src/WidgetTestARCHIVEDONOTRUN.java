@@ -63,7 +63,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-//TODO make an EME mode for moon?
+//TODO make an EME mode for moon? Maybe also have a way to try and calc best time to reach certain area?
+//TODO add documentation to github
 class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	private JComboBox scBox;
 	private Color bgColor;
@@ -169,7 +170,7 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 		} catch (JSONException | IOException e1) {
 			e1.printStackTrace();
 			//if the previous code somehow doesnt work, must mean something is wrong with java
-			//TODO make error dialog show up when this happens
+			JOptionPane.showMessageDialog(null, "Code broke while trying to process sc.json, let dev know", "Code broke", JOptionPane.ERROR_MESSAGE);
 			System.out.println("code broke during json initialization, no real way for user to break this part so let the dev know");
 			System.exit(1);
 		}
@@ -567,7 +568,6 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
             			}
             			//if create new S/C has been selected, make a new SC in the scBoxOptions array
             			else if(scBox.getSelectedIndex()==1) {
-            				//TODO make seleceted index 0 
             				JTextField idField = new JTextField();
             				JTextField nickField = new JTextField();
             				JTextField freqField = new JTextField();
@@ -591,6 +591,8 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
             				
             				
             				scBox.addItem(scNickList.get(scNickList.size()-1));
+            				//set selected index to 0, which is null
+            				scBox.setSelectedIndex(0);
             			}
             			//if something other than create new S/C has been selected, request data from jpl horizons
             			else {
@@ -661,6 +663,8 @@ class WidgetTestARCHIVEDONOTRUN extends JFrame implements ActionListener{
 	public void actionPerformed(ActionEvent e) {
 		
 	}
+	//TODO make error message show up for current data request, doesnt currently work
+	//TODO make error message have text wrapping
 	//TODO make the lat long freq and S/C be input when calling function, should be faster than getting those values every single time the position updates
 	//swing worker for requesting current data, needs optimizing
 	public  void doRequestCurrentData() {
